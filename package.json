@@ -7,6 +7,8 @@
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
     "build": "bun run build.ts",
+    "publish": "bun run publish.ts",
+    "deploy": "bun run build && bun run publish",
     "lint": "npm run fix && biome check src",
     "fix": "biome check --write --unsafe src"
   },
