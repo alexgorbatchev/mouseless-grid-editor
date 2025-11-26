@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts"
+    "build": "bun run build.ts",
+    "lint": "npm run fix && biome check src",
+    "fix": "biome check --write --unsafe src"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.1.2",
@@ -17,6 +19,7 @@
   "devDependencies": {
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@biomejs/biome": "^2.3.4"
   }
 }

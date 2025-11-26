@@ -1,4 +1,4 @@
-import type { LetterGrid } from '../types';
+import type { LetterGrid } from "../types";
 
 type GridDisplayProps = {
   grid: LetterGrid;
@@ -11,22 +11,22 @@ export function GridDisplay({ grid, title, fullWidth = false }: GridDisplayProps
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
-  
+
   // Calculate cell size - account for borders (cols + 1 borders at 2px each)
   const borderWidth = (cols + 1) * 2;
-  const cellSize = fullWidth ? `calc((98vw - ${borderWidth}px) / ${cols})` : '40px';
+  const cellSize = fullWidth ? `calc((98vw - ${borderWidth}px) / ${cols})` : "40px";
 
   return (
     <div className="mb-8">
       <h3 className="text-xl font-semibold mb-4">{title}</h3>
-      <div 
+      <div
         className={`grid gap-0 border-2 border-[#646cff] inline-grid`}
         style={{
           gridTemplateColumns: `repeat(${cols}, ${cellSize})`,
-          gridTemplateRows: `repeat(${rows}, ${cellSize})`
+          gridTemplateRows: `repeat(${rows}, ${cellSize})`,
         }}
       >
-        {grid.map((row, rowIndex) => 
+        {grid.map((row, rowIndex) =>
           row.map((cell, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}

@@ -1,4 +1,5 @@
-import type { GridLevel } from '../types';
+import type { GridLevel } from "../types";
+import { NumberInput } from "./NumberInput";
 
 type GridInputProps = {
   label: string;
@@ -13,8 +14,11 @@ export function GridInput({ label, level, onChange, error }: GridInputProps) {
       <h3 className="text-xl font-semibold mb-3">{label}</h3>
       <div className="space-y-3">
         <div>
-          <label className="block text-sm mb-1">Letters:</label>
+          <label htmlFor={`${label}-letters`} className="block text-sm mb-1">
+            Letters:
+          </label>
           <input
+            id={`${label}-letters`}
             type="text"
             value={level.letters}
             onChange={(e) => onChange({ ...level, letters: e.target.value })}
@@ -23,26 +27,8 @@ export function GridInput({ label, level, onChange, error }: GridInputProps) {
           />
         </div>
         <div className="flex gap-4">
-          <div className="flex-1">
-            <label className="block text-sm mb-1">Columns:</label>
-            <input
-              type="number"
-              min="1"
-              value={level.columns}
-              onChange={(e) => onChange({ ...level, columns: parseInt(e.target.value) || 1 })}
-              className="w-full px-3 py-2 bg-[#2a2a2a] rounded border border-[#3a3a3a] focus:border-[#646cff] outline-none"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm mb-1">Rows:</label>
-            <input
-              type="number"
-              min="1"
-              value={level.rows}
-              onChange={(e) => onChange({ ...level, rows: parseInt(e.target.value) || 1 })}
-              className="w-full px-3 py-2 bg-[#2a2a2a] rounded border border-[#3a3a3a] focus:border-[#646cff] outline-none"
-            />
-          </div>
+          <NumberInput label="Columns" value={level.columns} onChange={(columns) => onChange({ ...level, columns })} />
+          <NumberInput label="Rows" value={level.rows} onChange={(rows) => onChange({ ...level, rows })} />
         </div>
       </div>
       {error && (
