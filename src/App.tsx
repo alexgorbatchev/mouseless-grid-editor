@@ -127,7 +127,7 @@ export function App() {
       <p className="mb-8 text-gray-400">
         Configure custom grid layouts for{" "}
         <a
-          href="https://github.com/alexgorbatchev/mouseless"
+          href="https://mouseless.click/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-400 hover:text-blue-300 underline font-medium"
