@@ -1,5 +1,16 @@
 import type { GridLevel, GridLevels, LetterGrid } from "../types";
 
+export function resolveGridLevel(level: GridLevel, fallback?: GridLevel): GridLevel {
+  const trimmed = level.letters.trim();
+  if (trimmed === "" && fallback && fallback.letters.trim() !== "") {
+    return {
+      ...level,
+      letters: fallback.letters,
+    };
+  }
+  return level;
+}
+
 export function buildLevelGrid(level: GridLevel, levelName: string): string[][] {
   const blocks: string[] = level.letters.trim().split(/\s+/);
 
@@ -55,8 +66,11 @@ export function buildLevelGrid(level: GridLevel, levelName: string): string[][] 
 }
 
 export function createLetterGrid({ level1, level2 }: GridLevels): LetterGrid {
-  const level1Grid: string[][] = buildLevelGrid(level1, "Level 1");
-  const level2Grid: string[][] = buildLevelGrid(level2, "Level 2");
+  const resolvedLevel1 = resolveGridLevel(level1);
+  const resolvedLevel2 = resolveGridLevel(level2, level1);
+
+  const level1Grid: string[][] = buildLevelGrid(resolvedLevel1, "Level 1");
+  const level2Grid: string[][] = buildLevelGrid(resolvedLevel2, "Level 2");
 
   const generatedPairs: Set<string> = new Set();
 

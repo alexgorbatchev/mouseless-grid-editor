@@ -2,29 +2,16 @@ import { useEffect, useState } from "react";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { GridDisplay } from "./components/GridDisplay";
 import { GridInput } from "./components/GridInput";
+import { MouselessBar } from "./components/MouselessBar";
+import { YamlModal } from "./components/YamlModal";
+import { DEFAULT_PRESET, PRESETS } from "./presets";
 import type { GridLevels } from "./types";
-import { buildLevelGrid, createLetterGrid } from "./utils/gridGenerator";
+import { buildLevelGrid, createLetterGrid, resolveGridLevel } from "./utils/gridGenerator";
+import { generateMouselessGridYaml } from "./utils/yamlConfig";
 import "./index.css";
 
-const DEFAULT_GRID: GridLevels = {
-  level1: {
-    letters: "QY WP OE RT UI AS DF GH JN ZM XL CV B",
-    columns: 5,
-    rows: 5,
-  },
-  level2: {
-    letters: "QWERT ASDFG ZXCVB YUIOP HJKLN",
-    columns: 6,
-    rows: 4,
-  },
-  subgrid: {
-    letters: "YUIOP HJKLN QWERT ASDFG ZXCVB",
-    columns: 5,
-    rows: 5,
-  },
-};
-
 const STORAGE_KEY = "mouseless-grid-levels";
+const STORAGE_PRESET_KEY = "mouseless-grid-preset-id";
 
 function loadFromStorage(): GridLevels {
   try {
@@ -32,37 +19,63 @@ function loadFromStorage(): GridLevels {
     if (stored) {
       return JSON.parse(stored);
     }
-  } catch (err) {
-    console.error("Failed to load from localStorage:", err);
+  } catch (error) {
+    console.error("Failed to load from localStorage:", error);
   }
-  return DEFAULT_GRID;
+  return DEFAULT_PRESET.levels;
 }
 
-function saveToStorage(levels: GridLevels): void {
+function loadPresetIdFromStorage(): string {
+  try {
+    const stored = localStorage.getItem(STORAGE_PRESET_KEY);
+    if (stored) {
+      return stored;
+    }
+  } catch (error) {
+    console.error("Failed to load preset id from localStorage:", error);
+  }
+  return DEFAULT_PRESET.id;
+}
+
+function saveToStorage(levels: GridLevels, presetId: string): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-  } catch (err) {
-    console.error("Failed to save to localStorage:", err);
+    localStorage.setItem(STORAGE_PRESET_KEY, presetId);
+  } catch (error) {
+    console.error("Failed to save to localStorage:", error);
   }
 }
 
 export function App() {
   const [levels, setLevels] = useState<GridLevels>(loadFromStorage);
+  const [activePresetId, setActivePresetId] = useState<string>(loadPresetIdFromStorage);
   const [primaryGrid, setPrimaryGrid] = useState<string[][]>([]);
   const [subgridData, setSubgridData] = useState<string[][]>([]);
   const [level1Error, setLevel1Error] = useState<string | null>(null);
   const [level2Error, setLevel2Error] = useState<string | null>(null);
   const [subgridError, setSubgridError] = useState<string | null>(null);
   const [gridError, setGridError] = useState<string | null>(null);
+  const [isYamlModalOpen, setIsYamlModalOpen] = useState(false);
 
-  const handleLevelsChange = (newLevels: GridLevels) => {
+  const handleLevelsChange = (newLevels: GridLevels, newPresetId = "custom"): void => {
     setLevels(newLevels);
-    saveToStorage(newLevels);
+    setActivePresetId(newPresetId);
+    saveToStorage(newLevels, newPresetId);
   };
 
-  const handleReset = () => {
-    setLevels(DEFAULT_GRID);
-    saveToStorage(DEFAULT_GRID);
+  const handlePresetSelect = (presetId: string): void => {
+    const preset = PRESETS.find((p) => p.id === presetId);
+    if (preset) {
+      setLevels(preset.levels);
+      setActivePresetId(preset.id);
+      saveToStorage(preset.levels, preset.id);
+    } else {
+      setActivePresetId("custom");
+    }
+  };
+
+  const handleReset = (): void => {
+    handlePresetSelect(DEFAULT_PRESET.id);
   };
 
   useEffect(() => {
@@ -74,8 +87,8 @@ export function App() {
     try {
       const primary = createLetterGrid(levels);
       setPrimaryGrid(primary);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "An error occurred";
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "An error occurred";
       setPrimaryGrid([]);
 
       if (errorMsg.includes("Level 1")) {
@@ -88,18 +101,22 @@ export function App() {
     }
 
     try {
-      const subgrid = buildLevelGrid(levels.subgrid, "Subgrid");
+      const resolvedSubgrid = resolveGridLevel(levels.subgrid, levels.level1);
+      const subgrid = buildLevelGrid(resolvedSubgrid, "Subgrid");
       setSubgridData(subgrid);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "An error occurred";
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "An error occurred";
       setSubgridData([]);
       setSubgridError(errorMsg);
     }
   }, [levels]);
 
+  const activePreset = PRESETS.find((p) => p.id === activePresetId);
+  const currentYaml = generateMouselessGridYaml(levels, activePresetId);
+
   return (
     <div className="w-full p-8">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-2">
         <h1 className="text-4xl font-bold">Mouseless Grid Editor</h1>
         <div className="flex gap-2">
           <a
@@ -117,27 +134,42 @@ export function App() {
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 bg-[#646cff] rounded border border-[#646cff] hover:bg-[#535bf2] transition-colors font-medium cursor-pointer"
+            className="px-4 py-2 bg-[#646cff] rounded border border-[#646cff] hover:bg-[#535bf2] transition-colors font-medium cursor-pointer text-sm"
           >
             Reset to Default
           </button>
         </div>
       </div>
 
-      <p className="mb-8 text-gray-400">
-        Configure custom grid layouts for{" "}
+      <p className="mb-6 text-gray-400">
+        Custom visual grid helper for{" "}
         <a
           href="https://mouseless.click/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-400 hover:text-blue-300 underline font-medium"
         >
-          Mouseless
+          Mouseless v1.0
         </a>
-        , an app for keyboard-driven navigation.
+        , a keyboard-driven mouse navigation tool.
       </p>
 
-      <div className="mb-8">
+      {/* Preset & Sync Bar */}
+      <MouselessBar
+        levels={levels}
+        activePresetId={activePresetId}
+        onPresetChange={handlePresetSelect}
+        onLevelsChange={(newLevels) => handleLevelsChange(newLevels, "custom")}
+        onViewYaml={() => setIsYamlModalOpen(true)}
+      />
+
+      {activePreset && (
+        <p className="text-xs text-gray-400 mb-6 italic">
+          ℹ️ {activePreset.name}: {activePreset.description}
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <GridInput
           label="Level 1"
           level={levels.level1}
@@ -149,13 +181,14 @@ export function App() {
           level={levels.level2}
           onChange={(level2) => handleLevelsChange({ ...levels, level2 })}
           error={level2Error}
+          fallbackLetters={levels.level1.letters}
         />
       </div>
 
       {gridError && <ErrorDisplay error={gridError} />}
 
       <div className="mb-8">
-        <GridDisplay grid={primaryGrid} title="Primary Grid" fullWidth />
+        <GridDisplay grid={primaryGrid} title="Primary Grid" cellWidth={80} cellHeight={40} />
       </div>
 
       <div className="mb-8">
@@ -164,12 +197,15 @@ export function App() {
           level={levels.subgrid}
           onChange={(subgrid) => handleLevelsChange({ ...levels, subgrid })}
           error={subgridError}
+          fallbackLetters={levels.level1.letters}
         />
       </div>
 
-      <div>
+      <div className="mb-8">
         <GridDisplay grid={subgridData} title="Subgrid" />
       </div>
+
+      <YamlModal isOpen={isYamlModalOpen} onClose={() => setIsYamlModalOpen(false)} yamlContent={currentYaml} />
     </div>
   );
 }
